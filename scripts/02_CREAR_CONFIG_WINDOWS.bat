@@ -7,5 +7,5 @@ if not exist config\local.json (
 )
 
 echo config\local.json listo.
-echo Verifica SUPABASE_URL y SUPABASE_PUBLISHABLE_KEY.
+echo Verifica API_BASE_URL del sistema web.
 pause

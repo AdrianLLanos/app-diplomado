@@ -1,4 +1,12 @@
-# DentalCare — APK Release
+# Clínica San Martín — APK Release
+
+La conexión actual utiliza las cuentas y la API del sistema web Angular.
+Consulta [la configuración y compilación actualizadas](docs/INTEGRACION_API_WEB.md).
+El APK actual es `Clinica-San-Martin-1.1.1.apk` (versión 1.1.1, código 3).
+El nombre visible en Android y dentro de la aplicación es **Clínica San Martín**.
+Ver [instalación y comprobaciones](docs/INSTALAR_APK_1_1_0.md).
+La información siguiente describe una entrega anterior, incluida su lista de
+limitaciones.
 
 ## Información de la entrega
 

@@ -1,34 +1,23 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
-
+import '../../core/api/clinic_api.dart';
 import 'patient.dart';
 
 class PatientRepository {
-  PatientRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
-
-  final SupabaseClient _client;
+  PatientRepository({ClinicApi? client})
+    : _client = client ?? ClinicApi.instance;
+  final ClinicApi _client;
 
   Future<List<Patient>> getAll() async {
-    final data = await _client
-        .from('pacientes')
-        .select()
-        .order('apellidos', ascending: true)
-        .order('nombres', ascending: true);
-    return (data as List<dynamic>)
-        .map((row) => Patient.fromMap(row as Map<String, dynamic>))
-        .toList();
+    final rows = await _client.all('pacientes');
+    return rows.map(Patient.fromApi).toList();
   }
 
-  Future<void> save(Patient patient) async {
-    final values = patient.toMap();
-    if (patient.id.isEmpty) {
-      await _client.from('pacientes').insert(values);
-    } else {
-      await _client.from('pacientes').update(values).eq('id', patient.id);
-    }
-  }
+  Future<Patient> getById(String id) async => Patient.fromApi(
+    Map<String, dynamic>.from(
+      await _client.request('GET', 'pacientes/$id') as Map,
+    ),
+  );
 
-  Future<void> delete(String patientId) async {
-    await _client.from('pacientes').delete().eq('id', patientId);
-  }
+  Future<void> save(Patient patient) =>
+      _client.save('pacientes', patient.id, patient.toApi());
+  Future<void> delete(String id) => _client.delete('pacientes', id);
 }

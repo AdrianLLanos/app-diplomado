@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/api/clinic_api.dart';
 
 import '../../core/config/app_config.dart';
 import '../auth/login_screen.dart';
-import '../appointments/appointment_list_screen.dart';
-import '../doctors/doctor_list_screen.dart';
+import '../auth/clinic_access.dart';
+import '../modules/clinic_area_screen.dart';
 import '../modules/module_screen.dart';
-import '../patients/patient_list_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key, required this.config});
@@ -14,25 +13,29 @@ class DashboardScreen extends StatelessWidget {
   final AppConfig config;
 
   static const _modules = <ClinicModule>[
-    ClinicModule('Pacientes', 'Historias clinicas y datos de contacto', Icons.people_alt_outlined, 'pacientes'),
-    ClinicModule('Doctores', 'Especialidades y perfiles profesionales', Icons.medical_services_outlined, 'doctores'),
-    ClinicModule('Agenda medica', 'Horarios de doctores', Icons.calendar_month_outlined, 'citas'),
-    ClinicModule('Citas', 'Reservas y atencion de pacientes', Icons.event_available_outlined, 'citas'),
-    ClinicModule('Casos clinicos', 'Seguimiento y diagnostico', Icons.folder_shared_outlined, 'casos_clinicos'),
-    ClinicModule('Recetas', 'Prescripciones de tratamiento', Icons.receipt_long_outlined, 'recetas'),
-    ClinicModule('Laboratorio', 'Informes y plantillas', Icons.science_outlined, 'informes_laboratorio'),
-    ClinicModule('Seguros', 'Coberturas de pacientes', Icons.verified_user_outlined, 'seguros'),
-    ClinicModule('Facturas', 'Facturacion de servicios', Icons.request_quote_outlined, 'facturas'),
-    ClinicModule('Pagos', 'Ingresos y movimientos', Icons.payments_outlined, 'pagos'),
-    ClinicModule('Reportes financieros', 'Resumen contable', Icons.assessment_outlined, 'facturas'),
-    ClinicModule('Configuracion', 'Usuarios, roles, moneda e impuestos', Icons.settings_outlined, 'perfiles'),
+    ClinicModule(
+      'Administrador',
+      'Gestion de la clinica y administracion',
+      Icons.admin_panel_settings_outlined,
+      'administrador',
+    ),
+    ClinicModule(
+      'Odontólogo',
+      'Pacientes, citas y atencion clinica',
+      Icons.medical_services_outlined,
+      'odontologo',
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final access = ClinicAccessScope.of(context);
+    final modules = _modules
+        .where((module) => access?.canOpenArea(module.endpoint) ?? false)
+        .toList();
     return Scaffold(
       appBar: AppBar(
-        title: const Text('DentalCare'),
+        title: const Text('Clínica San Martín'),
         actions: <Widget>[
           IconButton(
             tooltip: 'Cerrar sesion',
@@ -43,13 +46,26 @@ class DashboardScreen extends StatelessWidget {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final columns = constraints.maxWidth >= 900 ? 3 : constraints.maxWidth >= 600 ? 2 : 1;
+          final columns = constraints.maxWidth >= 900
+              ? 3
+              : constraints.maxWidth >= 600
+              ? 2
+              : 1;
           return ListView(
             padding: const EdgeInsets.all(20),
             children: <Widget>[
-              Text('Panel de control', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
+              Text(
+                'Panel de control',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 6),
-              const Text('Accede a los modulos operativos de la clinica.'),
+              Text(
+                access?.isAdministrator == true
+                    ? 'Selecciona el modulo Administrador u Odontólogo.'
+                    : 'Accede a tus funciones de Odontólogo.',
+              ),
               const SizedBox(height: 24),
               GridView.builder(
                 shrinkWrap: true,
@@ -60,20 +76,14 @@ class DashboardScreen extends StatelessWidget {
                   crossAxisSpacing: 12,
                   childAspectRatio: columns == 1 ? 3.5 : 1.7,
                 ),
-                itemCount: _modules.length,
+                itemCount: modules.length,
                 itemBuilder: (context, index) {
-                  final module = _modules[index];
+                  final module = modules[index];
                   return _ModuleCard(
                     module: module,
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => module.endpoint == 'pacientes'
-                            ? const PatientListScreen()
-                            : module.endpoint == 'doctores'
-                                ? const DoctorListScreen()
-                                : module.endpoint == 'citas'
-                                    ? const AppointmentListScreen()
-                                : ModuleScreen(module: module),
+                        builder: (_) => ClinicAreaScreen(module: module),
                       ),
                     ),
                   );
@@ -87,7 +97,8 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Future<void> _signOut(BuildContext context) async {
-    await Supabase.instance.client.auth.signOut();
+    ClinicApi.instance.clearSession();
+    ClinicAccessSession.current.value = null;
     if (!context.mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute<void>(builder: (_) => LoginScreen(config: config)),
@@ -109,15 +120,33 @@ class _ModuleCard extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(18),
-          child: Row(children: <Widget>[
-            CircleAvatar(backgroundColor: const Color(0xFFE0F2F1), child: Icon(module.icon, color: const Color(0xFF006B72))),
-            const SizedBox(width: 14),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
-              Text(module.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(module.description, maxLines: 2, overflow: TextOverflow.ellipsis),
-            ])),
-          ]),
+          child: Row(
+            children: <Widget>[
+              CircleAvatar(
+                backgroundColor: const Color(0xFFE0F2F1),
+                child: Icon(module.icon, color: const Color(0xFF006B72)),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      module.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      module.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

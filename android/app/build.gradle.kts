@@ -27,6 +27,11 @@ android {
 
     buildTypes {
         release {
+            // Can be disabled for local APKs on machines with limited CPU.
+            val optimizeRelease = providers.gradleProperty("optimizeRelease")
+                .orElse("true").get().toBoolean()
+            isMinifyEnabled = optimizeRelease
+            isShrinkResources = optimizeRelease
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")

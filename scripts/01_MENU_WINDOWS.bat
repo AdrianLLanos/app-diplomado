@@ -7,13 +7,13 @@ cls
 echo ============================================================
 echo DENTALCARE - MENU WINDOWS
 echo ============================================================
-echo 1. Supabase - elegir dispositivo
-echo 2. Supabase - Chrome
+echo 1. API web - elegir dispositivo
+echo 2. API web - Chrome
 echo 3. Ver dispositivos
 echo 4. Crear configuracion local
 echo 0. Salir
 echo ============================================================
-set /p option=Opcion: 
+set /p "option=Opcion: "
 
 if "%option%"=="1" goto :run_device
 if "%option%"=="2" goto :run_chrome
@@ -38,7 +38,7 @@ goto :after_run
 :missing_config
 echo.
 echo No existe config\local.json.
-echo Selecciona la opcion 4 para crearlo y agrega tus credenciales de Supabase.
+echo Selecciona la opcion 4 para crearlo y agrega la direccion API_BASE_URL del sistema web.
 
 :after_run
 echo.

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/api/clinic_api.dart';
 
 import '../../core/config/app_config.dart';
 import '../dashboard/dashboard_screen.dart';
+import 'clinic_access.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.config});
@@ -34,23 +35,36 @@ class _LoginScreenState extends State<LoginScreen> {
       _error = null;
     });
     try {
+      ClinicAccessSession.current.value = null;
       if (!widget.config.isConfigured) {
-        throw const AuthException('Configura SUPABASE_URL y SUPABASE_PUBLISHABLE_KEY.');
+        throw const ClinicApiException(
+          'Configura API_BASE_URL con la direccion HTTPS de tu sistema web.',
+        );
       }
-      await Supabase.instance.client.auth.signInWithPassword(
-        email: _email.text,
-        password: _password.text,
+      final user = await ClinicApi.instance.login(
+        _email.text.trim(),
+        _password.text,
       );
+      final access = ClinicAccess.fromApi(user);
+      if (!access.hasPanelAccess) {
+        ClinicApi.instance.clearSession();
+        throw const ClinicApiException(
+          'Esta app permite el acceso a Administrador y Odontologo. Solicita el rol correspondiente en el sistema web.',
+        );
+      }
+      ClinicAccessSession.current.value = access;
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(builder: (_) => DashboardScreen(config: widget.config)),
+        MaterialPageRoute<void>(
+          builder: (_) => DashboardScreen(config: widget.config),
+        ),
       );
-    } on AuthException catch (error) {
+    } on ClinicApiException catch (error) {
       if (mounted) setState(() => _error = error.message);
     } catch (_) {
-      if (mounted) {
-        setState(() => _error = 'No se pudo conectar con Supabase.');
-      }
+      ClinicApi.instance.clearSession();
+      if (mounted)
+        setState(() => _error = 'No se pudo iniciar sesion en el sistema web.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -83,19 +97,27 @@ class _LoginScreenState extends State<LoginScreen> {
                         const CircleAvatar(
                           radius: 36,
                           backgroundColor: Color(0xFF006B72),
-                          child: Icon(Icons.health_and_safety_outlined,
-                              color: Colors.white, size: 40),
+                          child: Icon(
+                            Icons.health_and_safety_outlined,
+                            color: Colors.white,
+                            size: 40,
+                          ),
                         ),
                         const SizedBox(height: 16),
-                        Text('DentalCare',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF006B72),
-                                )),
+                        Text(
+                          'Clínica San Martín',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF006B72),
+                              ),
+                        ),
                         const SizedBox(height: 6),
-                        const Text('Sistema de gestion de clinica dental',
-                            textAlign: TextAlign.center),
+                        const Text(
+                          'Sistema de gestion de clinica dental',
+                          textAlign: TextAlign.center,
+                        ),
                         const SizedBox(height: 28),
                         TextFormField(
                           controller: _email,
@@ -106,7 +128,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           validator: (value) {
                             final email = value?.trim() ?? '';
-                            return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)
+                            return RegExp(
+                                  r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+                                ).hasMatch(email)
                                 ? null
                                 : 'Ingresa un correo valido';
                           },
@@ -119,9 +143,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             labelText: 'Contrasena',
                             prefixIcon: const Icon(Icons.lock_outline),
                             suffixIcon: IconButton(
-                              icon: Icon(_obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined),
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
                               onPressed: () => setState(
                                 () => _obscurePassword = !_obscurePassword,
                               ),
@@ -138,8 +164,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         if (_error != null) ...<Widget>[
                           const SizedBox(height: 14),
-                          Text(_error!,
-                              style: const TextStyle(color: Colors.redAccent)),
+                          Text(
+                            _error!,
+                            style: const TextStyle(color: Colors.redAccent),
+                          ),
                         ],
                         const SizedBox(height: 20),
                         FilledButton(
@@ -148,7 +176,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             minimumSize: const Size.fromHeight(52),
                             backgroundColor: const Color(0xFF006B72),
                           ),
-                          child: Text(_loading ? 'Verificando...' : 'Iniciar sesion'),
+                          child: Text(
+                            _loading ? 'Verificando...' : 'Iniciar sesion',
+                          ),
                         ),
                       ],
                     ),

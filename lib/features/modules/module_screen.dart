@@ -16,23 +16,27 @@ class ModuleScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(module.name)),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
-        icon: const Icon(Icons.add),
-        label: const Text('Nuevo'),
-      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
-          child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
-            Icon(module.icon, size: 56, color: const Color(0xFF006B72)),
-            const SizedBox(height: 16),
-            Text(module.name, style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 8),
-            Text(module.description, textAlign: TextAlign.center),
-            const SizedBox(height: 18),
-            const Text('Los datos de este modulo se gestionan de forma segura en Supabase.', textAlign: TextAlign.center),
-          ]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(module.icon, size: 56, color: const Color(0xFF006B72)),
+              const SizedBox(height: 16),
+              Text(
+                module.name,
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 8),
+              Text(module.description, textAlign: TextAlign.center),
+              const SizedBox(height: 18),
+              const Text(
+                'Esta pantalla esta pendiente de implementacion.',
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );

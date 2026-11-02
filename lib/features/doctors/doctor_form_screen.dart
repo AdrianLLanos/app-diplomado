@@ -43,19 +43,21 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
     try {
-      await _repository.save(Doctor(
-        id: widget.doctor?.id ?? '',
-        fullName: _name.text,
-        specialty: _specialty.text,
-        phone: _phone.text,
-        email: _email.text,
-      ));
+      await _repository.save(
+        Doctor(
+          id: widget.doctor?.id ?? '',
+          fullName: _name.text,
+          specialty: _specialty.text,
+          phone: _phone.text,
+          email: _email.text,
+        ),
+      );
       if (mounted) Navigator.of(context).pop(true);
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo guardar el doctor. Verifica Supabase.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -64,31 +66,46 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: Text(widget.doctor == null ? 'Nuevo doctor' : 'Editar doctor')),
-        body: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(20),
-            children: <Widget>[
-              Text('Perfil profesional', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 16),
-              _field(_name, 'Nombre completo', validator: _validateName),
-              const SizedBox(height: 12),
-              _field(_specialty, 'Especialidad', validator: _validateSpecialty),
-              const SizedBox(height: 12),
-              _field(_phone, 'Telefono', keyboardType: TextInputType.phone, validator: _validatePhone),
-              const SizedBox(height: 12),
-              _field(_email, 'Correo electronico', keyboardType: TextInputType.emailAddress, validator: _validateEmail),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: _saving ? null : _save,
-                icon: const Icon(Icons.save_outlined),
-                label: Text(_saving ? 'Guardando...' : 'Guardar doctor'),
-              ),
-            ],
+    appBar: AppBar(
+      title: Text(widget.doctor == null ? 'Nuevo doctor' : 'Editar doctor'),
+    ),
+    body: Form(
+      key: _formKey,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: <Widget>[
+          Text(
+            'Perfil profesional',
+            style: Theme.of(context).textTheme.titleLarge,
           ),
-        ),
-      );
+          const SizedBox(height: 16),
+          _field(_name, 'Nombre completo', validator: _validateName),
+          const SizedBox(height: 12),
+          _field(_specialty, 'Especialidad', validator: _validateSpecialty),
+          const SizedBox(height: 12),
+          _field(
+            _phone,
+            'Telefono',
+            keyboardType: TextInputType.phone,
+            validator: _validatePhone,
+          ),
+          const SizedBox(height: 12),
+          _field(
+            _email,
+            'Correo electronico',
+            keyboardType: TextInputType.emailAddress,
+            validator: _validateEmail,
+          ),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: _saving ? null : _save,
+            icon: const Icon(Icons.save_outlined),
+            label: Text(_saving ? 'Guardando...' : 'Guardar doctor'),
+          ),
+        ],
+      ),
+    ),
+  );
 
   Widget _field(
     TextEditingController controller,
@@ -96,31 +113,37 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) => TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        decoration: InputDecoration(labelText: label),
-        validator: validator,
-      );
+    controller: controller,
+    keyboardType: keyboardType,
+    decoration: InputDecoration(labelText: label),
+    validator: validator,
+  );
 
   String? _validateName(String? value) {
     final name = value?.trim() ?? '';
     if (name.length < 3) return 'Ingresa el nombre completo';
-    if (!RegExp(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ .'-]+$").hasMatch(name)) return 'Usa solo letras y espacios';
+    if (!RegExp(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ .'-]+$").hasMatch(name))
+      return 'Usa solo letras y espacios';
     return null;
   }
 
-  String? _validateSpecialty(String? value) => (value?.trim().isEmpty ?? true) ? 'Ingresa la especialidad' : null;
+  String? _validateSpecialty(String? value) =>
+      (value?.trim().isEmpty ?? true) ? 'Ingresa la especialidad' : null;
 
   String? _validatePhone(String? value) {
     final phone = value?.trim() ?? '';
     if (phone.isEmpty) return null;
     final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
-    return digits.length >= 7 && digits.length <= 15 ? null : 'Ingresa un telefono valido de 7 a 15 digitos';
+    return digits.length >= 7 && digits.length <= 15
+        ? null
+        : 'Ingresa un telefono valido de 7 a 15 digitos';
   }
 
   String? _validateEmail(String? value) {
     final email = value?.trim() ?? '';
-    if (email.isEmpty) return null;
-    return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email) ? null : 'Ingresa un correo valido';
+    if (email.isEmpty) return 'Ingresa un correo electronico';
+    return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)
+        ? null
+        : 'Ingresa un correo valido';
   }
 }
